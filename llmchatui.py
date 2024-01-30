@@ -27,6 +27,7 @@ os.environ["ACTIVELOOP_TOKEN"] = "..."
 # Dummy usage statistics - replace these with your actual logic for calculating usage
 # TOTAL_TOKENS_USED = 1782
 # TOTAL_COST = 0.003564
+
 embeddings = OpenAIEmbeddings(model="text-embedding-ada-002")
 
 # TODO: use your organization id here. (by default, org id is your username)
