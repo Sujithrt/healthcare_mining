@@ -22,8 +22,8 @@ import time
 
 load_dotenv()
 # Statically initialize your API key
-os.environ["OPENAI_API_KEY"] = "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"
-os.environ["ACTIVELOOP_TOKEN"] = "eyJhbGciOiJIUzUxMiIsImlhdCI6MTcwNTYxNjI1NSwiZXhwIjoxNzY4Nzc0NjQyfQ.eyJpZCI6InJvbml0cGF0aWwifQ.au8M98Fe76AWb_Lne5pVGVOf4azrdpbQuzyO_3BJtkl--PJYxrlgQVEFfQSIc7pdFX5rSyHaILojzhDXT6iSGA"
+os.environ["OPENAI_API_KEY"] = "..."
+os.environ["ACTIVELOOP_TOKEN"] = "..."
 # Dummy usage statistics - replace these with your actual logic for calculating usage
 # TOTAL_TOKENS_USED = 1782
 # TOTAL_COST = 0.003564
