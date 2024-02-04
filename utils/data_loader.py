@@ -11,6 +11,8 @@ from newspaper import Article
 import requests
 import time
 
+from initialize_vector_store import initialize_vector_store
+
 
 def handle_load_error(loader):
     if loader:
@@ -91,4 +93,5 @@ def scrape_link(url, astra_vector_store):
 
 
 if __name__ == '__main__':
-    populate_vector_store('../Documents/questions.json')
+    astra_vector_store = initialize_vector_store(st.secrets['ASTRA_DB_APPLICATION_TOKEN'], st.secrets['ASTRA_DB_ID'])
+    populate_vector_store('Documents/budget_speech.pdf', astra_vector_store)
