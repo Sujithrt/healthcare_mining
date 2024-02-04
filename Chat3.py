@@ -1,127 +1,96 @@
+import os
 import streamlit as st
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
-from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Cassandra
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder, SystemMessagePromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
-from langchain.tools.retriever import create_retriever_tool
-from langchain.agents import create_openai_functions_agent
-from langchain.agents import AgentExecutor
-from langchain import hub
-import cassio
-import time
+from langchain_community.callbacks import OpenAICallbackHandler, get_openai_callback
 
-st.set_page_config(page_title="Healthcare Chatbot", page_icon=":robot_face:")
-st.header('Healthcare Chatbot')
+from utils.data_loader import populate_vector_store, scrape_link
+from utils.initialize_vector_store import initialize_vector_store
+from utils.create_agent_executor import create_agent_executor
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
 
-for message in st.session_state.messages:
-    if isinstance(message, SystemMessage):
-        continue
-    role = None
-    content = None
-    if isinstance(message, HumanMessage):
-        role = "user"
-        content = message.content
-    elif isinstance(message, AIMessage):
-        role = "assistant"
-        content = message.content
+def update_usage(cb: OpenAICallbackHandler) -> None:
+    callback_properties = [
+        "total_tokens",
+        "prompt_tokens",
+        "completion_tokens",
+        "total_cost",
+    ]
+    print('Callback', cb)
+    for prop in callback_properties:
+        value = getattr(cb, prop, 0)
+        st.session_state.usage[prop] += value
 
-    with st.chat_message(role):
-        st.markdown(content)
 
-embedding = OpenAIEmbeddings()
+def main():
+    if "usage" not in st.session_state:
+        st.session_state.usage = {
+            "total_tokens": 0,
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_cost": 0.0,
+        }
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-cassio.init(token=st.secrets['ASTRA_DB_APPLICATION_TOKEN'], database_id=st.secrets['ASTRA_DB_ID'])
-astra_vector_store = Cassandra(
-    embedding=embedding,
-    table_name="budget_speech",
-    session=None,
-    keyspace=None,
-)
-retriever = astra_vector_store.as_retriever(search_kwargs={"k": 3})
+    astra_vector_store = initialize_vector_store(st.secrets['ASTRA_DB_APPLICATION_TOKEN'], st.secrets['ASTRA_DB_ID'])
 
-retriever_tool = create_retriever_tool(
-    retriever,
-    "budget_speech_search",
-    "Search for information about the Indian budget 2023-2024. For any questions about the Indian budget, \
-    you must use this tool!",
-)
+    st.set_page_config(page_title="Healthcare Chatbot", page_icon=":robot_face:")
+    st.header('Healthcare Chatbot')
+    with st.sidebar:
+        st.header("API Usage")
+        if st.session_state["usage"]:
+            st.metric("Total Tokens", st.session_state["usage"]["total_tokens"])
+            st.metric("Total Costs in $", st.session_state["usage"]["total_cost"])
+        with st.container(border=True):
+            st.markdown("### Upload Files")
+            uploaded_files = st.file_uploader("Upload a file",
+                                              accept_multiple_files=True,
+                                              type=['csv', 'pdf', 'json', 'html', 'md'],
+                                              label_visibility='hidden')
+            if uploaded_files:
+                for uploaded_file in uploaded_files:
+                    populate_vector_store(uploaded_file, astra_vector_store)
+                    st.success(f"Processed file {uploaded_file.name}. You may ask me questions about the file now.")
 
-agent_prompt = hub.pull("hwchase17/openai-functions-agent")
-chat_llm = ChatOpenAI(
-    openai_api_key=st.secrets['OPENAI_API_KEY'],
-    temperature=0.5,
-)
+        with st.container(border=True):
+            st.markdown("### Submit Links")
+            new_link = st.text_input("Enter a link",
+                                     key="new_link",
+                                     placeholder="Paste your link here...",
+                                     label_visibility='hidden')
+            if st.button("Submit Link", key="submit_link") or input:
+                try:
+                    scrape_link(new_link, astra_vector_store)
+                    st.success("Link successfully scraped and processed!")
+                except Exception as e:
+                    st.error(f"Failed to scrape link: {e}")
 
-tools = [retriever_tool]
+    for message in st.session_state.messages:
+        if isinstance(message, SystemMessage):
+            continue
+        role = None
+        content = None
+        if isinstance(message, HumanMessage):
+            role = "user"
+            content = message.content
+        elif isinstance(message, AIMessage):
+            role = "assistant"
+            content = message.content
 
-agent = create_openai_functions_agent(chat_llm, tools, agent_prompt)
+        with st.chat_message(role):
+            st.markdown(content)
 
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+    agent_executor = create_agent_executor(astra_vector_store, st.secrets['OPENAI_API_KEY'])
 
-# chat_history = []
-# contextualize_q_system_prompt = """Given a chat history and the latest user question \
-# which might reference context in the chat history, formulate a standalone question \
-# which can be understood without the chat history. Do NOT answer the question, \
-# just reformulate it if needed and otherwise return it as is."""
-# contextualize_q_prompt = ChatPromptTemplate.from_messages(
-#     [
-#         SystemMessagePromptTemplate.from_template(contextualize_q_system_prompt),
-#         MessagesPlaceholder(variable_name="chat_history"),
-#         HumanMessage(content="{question}"),
-#     ]
-# )
-# contextualize_q_chain = contextualize_q_prompt | chat_llm | StrOutputParser()
-# qa_system_prompt = """You are an assistant for question-answering tasks. \
-# Use the following pieces of retrieved context to answer the question. \
-# If you don't know the answer, just say that you don't know. \
-# Use three sentences maximum and keep the answer concise.\
-#
-# {context}"""
-# qa_prompt = ChatPromptTemplate.from_messages(
-#     [
-#         SystemMessagePromptTemplate.from_template(qa_system_prompt),
-#         MessagesPlaceholder(variable_name="chat_history"),
-#         HumanMessage(content="{question}"),
-#     ]
-# )
-#
-#
-# def format_docs(docs):
-#     return "\n\n".join(doc.page_content for doc in docs)
-#
-#
-# def contextualized_question(input: dict):
-#     if input.get("chat_history"):
-#         return contextualize_q_chain
-#     else:
-#         return input["question"]
-#
-#
-# rag_chain = (
-#     RunnablePassthrough.assign(
-#         context=contextualized_question | retriever | format_docs
-#     )
-#     | qa_prompt
-#     | chat_llm
-# )
+    if user_input := st.chat_input("Ask me anything"):
+        st.session_state.messages.append(HumanMessage(content=user_input))
+        st.chat_message("user").markdown(user_input)
+        with get_openai_callback() as cb:
+            response = agent_executor.invoke({"input": user_input})
+            update_usage(cb)
+            st.chat_message("assistant").markdown(response['output'])
+            st.session_state.messages.append(AIMessage(content=response['output']))
 
-if user_input := st.chat_input("Ask me anything"):
-    st.session_state.messages.append(HumanMessage(content=user_input))
-    st.chat_message("user").markdown(user_input)
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
-        full_response = ""
-        # response = rag_chain.invoke({"question": user_input, "chat_history": chat_history})
-        # chat_history.extend([HumanMessage(content=user_input), response])
-        response = agent_executor.invoke({"input": user_input})
-        for chunk in response['output'].split():
-            full_response += chunk + " "
-            time.sleep(0.05)
-            message_placeholder.markdown(full_response)
-    st.session_state.messages.append(AIMessage(content=response['output']))
+
+if __name__ == "__main__":
+    main()

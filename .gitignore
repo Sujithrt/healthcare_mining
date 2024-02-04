@@ -163,3 +163,7 @@ cython_debug/
 
 .DS_Store
 .idea/
+
+temp_files/
+Documents/
+data_load.py

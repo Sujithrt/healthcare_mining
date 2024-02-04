@@ -1,6 +1,6 @@
 from langchain_community.vectorstores import Cassandra
 from langchain_openai import OpenAIEmbeddings
-from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 import cassio
 from PyPDF2 import PdfReader
 import streamlit as st
@@ -26,7 +26,7 @@ def populate_vector_store():
         keyspace=None,
     )
 
-    text_splitter = CharacterTextSplitter(
+    text_splitter = RecursiveCharacterTextSplitter(
         separator="\n",
         chunk_size=800,
         chunk_overlap=200,
