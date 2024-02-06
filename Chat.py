@@ -1,4 +1,3 @@
-import os
 import streamlit as st
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 from langchain_community.callbacks import OpenAICallbackHandler, get_openai_callback
