@@ -5,9 +5,13 @@ from langchain_community.callbacks import OpenAICallbackHandler, get_openai_call
 
 from utils.data_loader import populate_vector_store, scrape_link
 from utils.initialize_vector_store import initialize_vector_store
-from utils.create_agent_executor import create_agent_executor
+from utils.create_agent_executor import agent_executor_AutoGPT, agent_executor_1,agent_executor_PlanExecute
 
-
+if 'chat_history' not in st.session_state:
+    st.session_state['chat_history'] = []
+if "messages" not in st.session_state:
+        st.session_state.messages = []
+        
 def update_usage(cb: OpenAICallbackHandler) -> None:
     callback_properties = [
         "total_tokens",
@@ -29,9 +33,9 @@ def main():
             "completion_tokens": 0,
             "total_cost": 0.0,
         }
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    
 
+    
     astra_vector_store = initialize_vector_store(st.secrets['ASTRA_DB_APPLICATION_TOKEN'], st.secrets['ASTRA_DB_ID'])
 
     st.set_page_config(page_title="Healthcare Chatbot", page_icon=":robot_face:")
@@ -58,7 +62,7 @@ def main():
                                      key="new_link",
                                      placeholder="Paste your link here...",
                                      label_visibility='hidden')
-            if st.button("Submit Link", key="submit_link") or input:
+            if st.button("Submit Link", key="submit_link"):
                 try:
                     scrape_link(new_link, astra_vector_store)
                     st.success("Link successfully scraped and processed!")
@@ -80,16 +84,35 @@ def main():
         with st.chat_message(role):
             st.markdown(content)
 
-    agent_executor = create_agent_executor(astra_vector_store, st.secrets['OPENAI_API_KEY'])
+    agent_executor = agent_executor_1(astra_vector_store, st.secrets['OPENAI_API_KEY'])
+    # agentAutoGPT=agent_executor_AutoGPT(astra_vector_store, st.secrets['OPENAI_API_KEY'])
+    # agentPlanExecute=agent_executor_PlanExecute(astra_vector_store, st.secrets['OPENAI_API_KEY'])
+
+
+    def update_chat_history(user_input, agent_response=None):
+        if user_input:
+            st.session_state.chat_history.append(f"User: {user_input}")
+        if agent_response:
+            st.session_state.chat_history.append(f"Agent: {agent_response}")
+
+    def get_current_context():
+        return "\n".join(st.session_state.chat_history)
 
     if user_input := st.chat_input("Ask me anything"):
         st.session_state.messages.append(HumanMessage(content=user_input))
         st.chat_message("user").markdown(user_input)
+        update_chat_history(user_input)
+        context_with_input = get_current_context()
         with get_openai_callback() as cb:
-            response = agent_executor.invoke({"input": user_input})
+            # response = agent_executor.invoke({"input": user_input})
+            response = agent_executor.invoke({"input": context_with_input})
+            # response=agentAutoGPT.run([user_input])
+            # response=agentPlanExecute.run(user_input)
             update_usage(cb)
+            # st.chat_message("assistant").markdown(response['output'])
             st.chat_message("assistant").markdown(response['output'])
             st.session_state.messages.append(AIMessage(content=response['output']))
+            update_chat_history(None, response['output'])
 
 
 if __name__ == "__main__":

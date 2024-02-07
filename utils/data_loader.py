@@ -11,7 +11,8 @@ from newspaper import Article
 import requests
 import time
 
-from initialize_vector_store import initialize_vector_store
+# from initialize_vector_store import initialize_vector_store
+from utils.initialize_vector_store import initialize_vector_store
 
 
 def handle_load_error(loader):
