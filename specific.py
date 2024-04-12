@@ -89,13 +89,14 @@ async def scrape_playwright(url, letter):
         finally:
             await browser.close()
 
-async def scrape_multiple_pages(url):
-    for letter in range(ord('a'), ord('z')+1):
-        letter = chr(letter)
+async def scrape_multiple_pages(url, letters):
+    for letter in letters:
         await scrape_playwright(url, letter)
 
+# Specify the letters you want to scrape
+letters_to_scrape = ['g','z']
 
-# TESTING
+# Modify the URL to include the placeholder for letters
 if __name__ == "__main__":
-    url = "https://www.webmd.com/a-to-z-guides/health-topics?pg={}"
-    asyncio.run(scrape_multiple_pages(url))
+    base_url = "https://www.webmd.com/a-to-z-guides/health-topics?pg={}"
+    asyncio.run(scrape_multiple_pages(base_url, letters_to_scrape))
