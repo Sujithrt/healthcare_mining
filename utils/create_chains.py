@@ -164,17 +164,6 @@ def create_conversational_retrieval_chain(astra_vector_store,
         convert_system_message_to_human=True,
     )
 
-    llama2_chat_llm = CTransformers(
-        model='models/llama-2-7b-chat.Q8_0.gguf',
-        model_type='llama',
-        config={'max_new_tokens': 256, 'temperature': 0.5})
-
-    mistral_chat_llm = CTransformers(
-        model='models/mistral-7b-instruct-v0.2.Q8_0.gguf',
-        model_type='mistral',
-        config={'max_new_tokens': 256, 'temperature': 0.5}
-    )
-
     claude_chat_llm = ChatAnthropic(
         temperature=0.5,
         api_key=claude_api_key,
@@ -185,12 +174,8 @@ def create_conversational_retrieval_chain(astra_vector_store,
         chat_llm = openai_chat_llm
     elif model == 'Google':
         chat_llm = google_chat_llm
-    elif model == 'Llama2':
-        chat_llm = llama2_chat_llm
-    elif model == 'Claude':
-        chat_llm = claude_chat_llm
     else:
-        chat_llm = mistral_chat_llm
+        chat_llm = claude_chat_llm
 
     chain = ConversationalRetrievalChain.from_llm(
         chat_llm,
