@@ -11,8 +11,6 @@ from newspaper import Article
 import requests
 import time
 
-# from utils.initialize_vector_store import initialize_vector_store
-
 
 def handle_load_error(loader):
     if loader:
@@ -28,7 +26,7 @@ def get_loader_for_file(file_path):
         return PyPDFLoader(file_path)
     elif file_path.endswith('.json'):
         return JSONLoader(file_path=file_path,
-                          jq_schema='{}',
+                          jq_schema='.[]',
                           text_content=False)
     elif file_path.endswith('.html'):
         return UnstructuredHTMLLoader(file_path)

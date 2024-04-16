@@ -166,4 +166,10 @@ cython_debug/
 
 temp_files/
 Documents/
-data_load.py
+utils/data_load.py
+Chat5.py
+default.sqlite
+SWM
+data
+models/llama-2-7b-chat.Q8_0.gguf
+models/mistral-7b-instruct-v0.2.Q8_0.gguf
