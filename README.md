@@ -6,7 +6,7 @@ In the expansive realm of digital healthcare data, individuals encounter signifi
 
 ## Problem Statement
 
-Our objective is to develop a system capable of not only comprehending users' nuanced queries but also ensuring the accuracy, credibility, and timeliness of the information it provides.
+Our objective is to develop a system capable of not only comprehending users' nuanced queries but also ensuring the accuracy, credibility, and timeliness of the healthcare information it provides.
 
 ## System Design and Development
 
@@ -21,10 +21,6 @@ Our system architecture is streamlined, focusing on the frontend application dev
 ### System Architecture and Algorithms
 
 - **Direct Calls to LLM**: The query embedding generation is performed through direct calls to LLM APIs and models. This approach ensures efficient handling of user requests and leverages different LLM’s powerful natural language processing capabilities.
-
-## Implementation of Algorithms
-
-Our Retrieval Agent, developed using Langchain, is designed for advanced query processing and information retrieval. We have implemented different chains and agents as will be shown in the upcoming sections.
 
 ## Different LLMs
 
@@ -57,8 +53,8 @@ We have integrated Trulens as our evaluation metric by coding specific feedback 
 
 - Python 3.8 or higher
 - Streamlit
-- Beautiful Soup
-- Requests Library
+- Beautiful Soup (for web scrapping)
+- Requests Library (for web scrapping)
 
 ### Setup Instructions
 
