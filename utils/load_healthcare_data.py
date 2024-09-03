@@ -35,11 +35,11 @@ def populate_vector_store(file_path, astra_vector_store):
 
 if __name__ == '__main__':
     astra_vector_store = initialize_vector_store(st.secrets['ASTRA_DB_APPLICATION_TOKEN'], st.secrets['ASTRA_DB_ID'])
-    folder_path = '../SWM'
+    folder_path = 'SWM'
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
         populate_vector_store(file_path, astra_vector_store)
-    folder_path = '../data'
+    folder_path = 'data'
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
         populate_vector_store(file_path, astra_vector_store)
